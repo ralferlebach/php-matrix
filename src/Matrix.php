@@ -64,13 +64,31 @@ class Matrix extends ArrayObject
                     $this[$r][$c] = $matrix[$r][$c];
                 }
             }
-        } else if (is_array($value) && $cols == null) {
+        } elseif ($cols == null) {
+            // Check, if $value is array.
+            if (is_array($value)) {
+                // Strip of any associated indices.
+                $value = array_values ($value);
+                // Check if $value is not an array of array.
+                if (is_array($value[0])) {
+                    // Note: Also strip of any further associated indices.
+                    foreach ($value as $key => $val) {
+                        $value[$key] = array_values ($val);
+                    }
+                } else {
+                    // Note: Vector is given, convert to proper matrix.
+                    $value = [$value]; 
+                }
+            } else {
+                // Note: int|float is given, convert to proper matrix.
+                $value = [[floatval($value)]];
+            }
             parent::__construct($value);
             $this->_rows = count($value);
             $this->_cols = count($value[0]);
         } else if (is_numeric($value) && is_numeric($cols)
-            && $value > 0 && $cols > 0
-        ) {
+                && $value > 0 && $cols > 0) {
+            // Create a void matrix with dimensions $value x $cols.
             $this->_rows = $value;
             $this->_cols = $cols;
             for ($r = 0; $r < $this->_rows; $r++) {
@@ -220,9 +238,12 @@ class Matrix extends ArrayObject
     public function determinant()
     {
         if (!$this->isSquare()) {
+            print_r($this);
             throw new MatrixException('Cannot compute determinant of non square matrix!');
         }
-        if ($this->_rows == 2) {
+        if ($this->_rows == 1) {
+            return $this[0][0];
+        } elseif ($this->_rows == 2) {
             return $this[0][0] * $this[1][1] - $this[0][1] * $this[1][0];
         } else {
             $out = 0;
@@ -246,7 +267,9 @@ class Matrix extends ArrayObject
         for ($c = 0; $c < $this->_cols; $c++) {
             $cofactorArray[$c] = [];
             for ($r = 0; $r < $this->_rows; $r++) {
-                if ($this->_cols == 2) {
+                if ($this->_cols == 1) {
+                    $cofactorArray[$c][$r] = 1;
+                } elseif ($this->_cols == 2) {
                     $cofactorArray[$c][$r] = pow(-1, $c + $r) * $this->subMatrix($c, $r)[0][0];
                 } else {
                     $cofactorArray[$c][$r] = pow(-1, $c + $r) * $this->subMatrix($c, $r)->determinant();
@@ -266,6 +289,7 @@ class Matrix extends ArrayObject
     {
         $resultArray = [];
         for ($i = 0; $i < $this->_cols; $i++) {
+            $resultArray[$i] = [];
             for ($j = 0; $j < $this->_rows; $j++) {
                 $resultArray[$i][$j] = $this[$j][$i];
             }
@@ -338,6 +362,56 @@ class Matrix extends ArrayObject
     public function getCols()
     {
         return $this->_cols;
+    }
+
+    /**
+     * Calculates the euclidiean distance between two matrices,
+     * return a float.
+     *
+    */
+    public function rooted_summed_squares():float
+    {
+        $result = 0;
+        for ($r = 0; $r < $this->_rows; $r++) {
+            for ($c = 0; $c < $this->_cols; $c++) {
+                $result += $this[$r][$c] ** 2;
+            }
+        }
+        return sqrt($result);
+    }
+
+    /**
+     * Returns the value of the highest absolute elemente
+     * of the matrix.
+     *
+     * return float
+    */
+    public function max_absolute_element():float
+    {
+        $result = 0;
+        for ($r = 0; $r < $this->_rows; $r++) {
+            for ($c = 0; $c < $this->_cols; $c++) {
+                $result = (abs($this[$r][$c]) > $result) ? (abs($this[$r][$c])) : $result;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Print the matrix as pretty php code.
+     *
+    */
+    public function print_m()
+    {
+        echo '('.$this->_rows. " x " . $this->_cols. ")-matrix : [";
+        for ($r = 0; $r < $this->_rows; $r++) {
+            echo "[";
+            for ($c = 0; $c < $this->_cols; $c++) {
+                echo ' '. round(floatval($this[$r][$c]), 3). (($c < (($this->_cols) - 1)) ? ', ' : ' ');
+            }
+            echo ']'. (($r < ($this->_rows) - 1) ? ", " : "");
+        }
+        echo ']';
     }
 
     /**
