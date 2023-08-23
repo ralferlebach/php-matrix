@@ -52,8 +52,7 @@ class Matrix extends ArrayObject
      * @param mixed $value Matrix, array or number of rows
      * @throws MatrixException Wrong parameters
      */
-    public function __construct($value, $cols = null)
-    {
+    public function __construct($value, $cols = null) {
         if ($value instanceof self) {
             $matrix = $value;
             $this->_rows = $matrix->_rows;
